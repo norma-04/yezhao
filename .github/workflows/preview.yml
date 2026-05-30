@@ -1,0 +1,45 @@
+# ─── 野造 · Preview Deployment ───
+# Creates a preview deployment for each PR
+# Posts a comment with the preview URL
+
+name: Preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    name: Vercel Preview
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.preview-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Preview
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: ''
+
+      - name: Comment Preview URL
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## 🔍 Preview Deployment Ready
+
+            | Environment | URL |
+            |-------------|-----|
+            | Preview | ${{ steps.deploy.outputs.preview-url }} |
+            | Branch | `${{ github.head_ref }}` |
+
+            ✅ Lint · ✅ TypeScript · ✅ Build
+          comment_tag: preview-url

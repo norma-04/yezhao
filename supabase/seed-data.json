@@ -1,0 +1,16 @@
+{
+  "tutorials": [
+    {"title":"Macrame 编织挂毯入门","slug":"macrame-wall-hanging","category":"weaving","difficulty":"beginner","duration_minutes":45,"description":"从零开始学习 Macrame 编织技艺，制作一幅美丽的波西米亚风格挂毯。","status":"published","learners_count":2341,"favorites_count":567},
+    {"title":"手工皮革卡包制作","slug":"handmade-leather-card-holder","category":"leather","difficulty":"intermediate","duration_minutes":120,"description":"学习基础皮革工艺，亲手制作一个可以陪伴多年的植鞣革卡包。","status":"published","learners_count":1856,"favorites_count":423},
+    {"title":"木勺雕刻入门","slug":"wooden-spoon-carving","category":"woodwork","difficulty":"beginner","duration_minutes":90,"description":"用一把雕刻刀完成你的第一把木勺。学习基础刀法和木材选择技巧。","status":"published","learners_count":1623,"favorites_count":389},
+    {"title":"石塑黏土首饰盘","slug":"clay-jewelry-tray","category":"clay","difficulty":"beginner","duration_minutes":60,"description":"用石塑黏土制作一个独一无二的几何首饰盘，包含塑形、打磨、上色。","status":"published","learners_count":2100,"favorites_count":498},
+    {"title":"法式刺绣胸针","slug":"french-embroidery-brooch","category":"embroidery","difficulty":"advanced","duration_minutes":180,"description":"学习法式刺绣的高级技法，完成一枚精致的花卉胸针。","status":"published","learners_count":890,"favorites_count":321}
+  ],
+  "materials": [
+    {"name":"棉绳","slug":"cotton-rope","category":"weaving","description":"Macrame 编织的主要材料，质地柔软，打结后线条清晰。","texture":"柔软、有弹性","size_info":"3mm / 4mm / 5mm","scenarios":["挂毯","吊篮","杯垫","包包"]},
+    {"name":"植鞣革","slug":"vegetable-tanned-leather","category":"leather","description":"植物鞣制的天然皮革，具有独特的皮香和变色效果。","texture":"坚实、挺括","size_info":"1.0mm / 1.5mm / 2.0mm","scenarios":["皮包","卡包","钱包","皮带"]},
+    {"name":"椴木块","slug":"basswood-block","category":"woodwork","description":"质地细腻均匀，软硬适中，是木雕和木勺入门的最佳选择。","texture":"细腻、均匀","size_info":"5x5x20cm / 10x10x5cm","scenarios":["木勺","木雕","小摆件"]},
+    {"name":"石塑黏土","slug":"stone-clay","category":"clay","description":"自然风干即可成型，无需烧制，适合制作家居装饰品。","texture":"柔软、易塑形","size_info":"500g / 1000g","scenarios":["首饰盘","花瓶","摆件","冰箱贴"]},
+    {"name":"绣线套装","slug":"embroidery-thread-set","category":"embroidery","description":"法国DMC绣线，色彩丰富不褪色，适合多种刺绣技法。","texture":"光滑、有光泽","size_info":"6股 / 8m每束","scenarios":["法绣","苏绣","十字绣","珠绣"]}
+  ]
+}

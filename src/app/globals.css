@@ -1,0 +1,322 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ═══════════════════════════════════════════════════
+   野造 · 完整 Design System (v2.0)
+   品牌关键词: 自然·治愈·温暖·手工感·新中式
+   ═══════════════════════════════════════════════════ */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ──────────────────────────────────────────────
+   PART 1: 品牌色彩系统
+   主色: Clay (陶土)  |  辅助: Warm (暖木)
+   强调: Sage (苔绿)  |  表面: Cream/Paper
+   ────────────────────────────────────────────── */
+
+@theme inline {
+  /* ── Clay (Primary) · 陶土色 ── */
+  --color-clay-50: oklch(0.98 0.008 62);
+  --color-clay-100: oklch(0.95 0.02 60);
+  --color-clay-200: oklch(0.90 0.04 58);
+  --color-clay-300: oklch(0.83 0.06 55);
+  --color-clay-400: oklch(0.74 0.08 50);
+  --color-clay-500: oklch(0.65 0.10 45);
+  --color-clay-600: oklch(0.58 0.11 40);
+  --color-clay-700: oklch(0.48 0.10 35);
+  --color-clay-800: oklch(0.38 0.08 30);
+  --color-clay-900: oklch(0.28 0.06 25);
+
+  /* ── Warm (Secondary) · 暖木色 ── */
+  --color-warm-50: oklch(0.99 0.01 85);
+  --color-warm-100: oklch(0.96 0.025 82);
+  --color-warm-200: oklch(0.91 0.05 78);
+  --color-warm-300: oklch(0.86 0.075 74);
+  --color-warm-400: oklch(0.80 0.10 68);
+  --color-warm-500: oklch(0.74 0.12 60);
+  --color-warm-600: oklch(0.65 0.12 52);
+  --color-warm-700: oklch(0.54 0.11 44);
+  --color-warm-800: oklch(0.42 0.09 36);
+  --color-warm-900: oklch(0.32 0.07 28);
+
+  /* ── Sage (Accent) · 苔绿色 ── */
+  --color-sage-50: oklch(0.98 0.01 140);
+  --color-sage-100: oklch(0.95 0.02 142);
+  --color-sage-200: oklch(0.90 0.03 144);
+  --color-sage-300: oklch(0.83 0.04 146);
+  --color-sage-400: oklch(0.72 0.05 148);
+  --color-sage-500: oklch(0.62 0.06 150);
+  --color-sage-600: oklch(0.52 0.05 152);
+  --color-sage-700: oklch(0.42 0.04 154);
+  --color-sage-800: oklch(0.33 0.03 156);
+  --color-sage-900: oklch(0.25 0.02 158);
+
+  /* ── Surface Colors · 表面色 ── */
+  --color-cream: oklch(0.99 0.005 90);
+  --color-paper: oklch(0.97 0.008 85);
+  --color-linen: oklch(0.96 0.01 82);
+  --color-wood: oklch(0.45 0.09 55);
+
+  /* ── Neutral Scale · 灰度系统 ── */
+  --color-neutral-50: oklch(0.985 0 0);
+  --color-neutral-100: oklch(0.95 0 0);
+  --color-neutral-200: oklch(0.90 0 0);
+  --color-neutral-300: oklch(0.83 0 0);
+  --color-neutral-400: oklch(0.72 0 0);
+  --color-neutral-500: oklch(0.62 0 0);
+  --color-neutral-600: oklch(0.52 0 0);
+  --color-neutral-700: oklch(0.42 0 0);
+  --color-neutral-800: oklch(0.33 0 0);
+  --color-neutral-900: oklch(0.25 0 0);
+
+  /* ── Semantic Colors · 语义色 ── */
+  --color-success-50: oklch(0.98 0.02 144);
+  --color-success-500: oklch(0.55 0.08 150);
+  --color-success-700: oklch(0.38 0.06 152);
+  --color-warning-50: oklch(0.98 0.03 85);
+  --color-warning-500: oklch(0.72 0.12 75);
+  --color-warning-700: oklch(0.52 0.10 72);
+  --color-error-50: oklch(0.98 0.01 15);
+  --color-error-500: oklch(0.55 0.18 18);
+  --color-error-700: oklch(0.40 0.15 20);
+  --color-info-50: oklch(0.97 0.02 250);
+  --color-info-500: oklch(0.60 0.10 248);
+  --color-info-700: oklch(0.42 0.08 250);
+
+  /* ── shadcn 品牌映射 ── */
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-clay-800);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: var(--color-clay-800);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: var(--color-clay-800);
+  --color-primary: var(--color-clay-600);
+  --color-primary-foreground: oklch(0.99 0.001 0);
+  --color-secondary: var(--color-clay-100);
+  --color-secondary-foreground: var(--color-clay-800);
+  --color-muted: var(--color-clay-50);
+  --color-muted-foreground: var(--color-clay-500);
+  --color-accent: var(--color-sage-100);
+  --color-accent-foreground: var(--color-sage-700);
+  --color-destructive: var(--color-error-500);
+  --color-border: var(--color-clay-200);
+  --color-input: var(--color-clay-200);
+  --color-ring: var(--color-clay-500);
+
+  /* ──────────────────────────────────────────────
+     PART 2: 字体系统 (Typography Scale)
+     基准 16px | Scale Ratio 1.25 (Major Third)
+     ────────────────────────────────────────────── */
+  --font-sans: var(--font-noto-sans), ui-sans-serif, system-ui;
+  --font-serif: var(--font-noto-serif), ui-serif, Georgia;
+  --font-mono: var(--font-geist-mono), ui-monospace;
+
+  /* Typography Size Scale */
+  --text-xs: 0.75rem;     /* 12px · Caption */
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;    /* 14px · Body Small */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;      /* 16px · Body */
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;    /* 18px · Body Large */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;     /* 20px · Subtitle */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;     /* 24px · H4 */
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;   /* 30px · H3 */
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;    /* 36px · H2 */
+  --text-4xl--line-height: 2.75rem;
+  --text-5xl: 3rem;       /* 48px · H1 */
+  --text-5xl--line-height: 3.5rem;
+  --text-6xl: 3.75rem;    /* 60px · Display */
+  --text-6xl--line-height: 4rem;
+  --text-7xl: 4.5rem;     /* 72px · Hero */
+  --text-7xl--line-height: 4.75rem;
+
+  /* ──────────────────────────────────────────────
+     PART 3: 间距系统 (4px Grid)
+     ────────────────────────────────────────────── */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  --spacing-16: 4rem;     /* 64px */
+  --spacing-20: 5rem;     /* 80px */
+  --spacing-24: 6rem;     /* 96px */
+  --spacing-section: 5rem;
+  --spacing-section-lg: 6rem;
+
+  /* ──────────────────────────────────────────────
+     PART 4: 圆角系统
+     ────────────────────────────────────────────── */
+  --radius: 0.75rem;          /* 12px · Default (Card, Dialog) */
+  --radius-sm: 0.375rem;      /* 6px · Small (Badge, Tag) */
+  --radius-md: 0.5rem;        /* 8px · Medium (Button, Input) */
+  --radius-lg: 0.75rem;       /* 12px · Large (Card) */
+  --radius-xl: 1rem;          /* 16px · XLarge (Modal) */
+  --radius-2xl: 1.25rem;      /* 20px · 2XLarge (Hero Card) */
+  --radius-3xl: 1.5rem;       /* 24px · 3XLarge */
+  --radius-4xl: 2rem;         /* 32px · 4XLarge (Banner) */
+  --radius-full: 9999px;      /* Pill (Button, Avatar) */
+
+  /* ──────────────────────────────────────────────
+     PART 5: 阴影系统
+     原则: 温暖柔和，避免生硬投影
+     ────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px oklch(0.28 0.06 25 / 0.03);
+  --shadow-sm: 0 1px 3px oklch(0.28 0.06 25 / 0.04), 0 2px 8px oklch(0.28 0.06 25 / 0.04);
+  --shadow-md: 0 2px 6px oklch(0.28 0.06 25 / 0.05), 0 6px 16px oklch(0.28 0.06 25 / 0.06);
+  --shadow-lg: 0 4px 12px oklch(0.28 0.06 25 / 0.06), 0 12px 32px oklch(0.28 0.06 25 / 0.08);
+  --shadow-xl: 0 8px 24px oklch(0.28 0.06 25 / 0.08), 0 20px 48px oklch(0.28 0.06 25 / 0.12);
+  --shadow-card: var(--shadow-sm);
+  --shadow-card-hover: var(--shadow-md);
+  --shadow-elevated: var(--shadow-lg);
+  --shadow-modal: var(--shadow-xl);
+
+  /* ──────────────────────────────────────────────
+     PART 6: 动效 Token System
+     ────────────────────────────────────────────── */
+  /* Duration */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+  --duration-slowest: 1000ms;
+
+  /* Easing Curves */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ──────────────────────────────────────────────
+   PART 7: CSS Variables (运行时)
+   ────────────────────────────────────────────── */
+:root {
+  --background: var(--color-cream);
+  --foreground: var(--color-clay-800);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--color-clay-800);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--color-clay-800);
+  --primary: var(--color-clay-600);
+  --primary-foreground: oklch(0.99 0.001 0);
+  --secondary: var(--color-clay-100);
+  --secondary-foreground: var(--color-clay-800);
+  --muted: var(--color-clay-50);
+  --muted-foreground: var(--color-clay-500);
+  --accent: var(--color-sage-100);
+  --accent-foreground: var(--color-sage-700);
+  --destructive: var(--color-error-500);
+  --border: var(--color-clay-200);
+  --input: var(--color-clay-200);
+  --ring: var(--color-clay-500);
+  --radius: 0.75rem;
+}
+
+/* ──────────────────────────────────────────────
+   PART 8: Base Layer
+   ────────────────────────────────────────────── */
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  html {
+    @apply scroll-smooth;
+    font-size: 16px;
+  }
+
+  /* Typography defaults */
+  h1 { @apply font-serif text-5xl font-semibold tracking-tight text-clay-800; }
+  h2 { @apply font-serif text-3xl font-semibold tracking-tight text-clay-800; }
+  h3 { @apply font-serif text-2xl font-medium tracking-tight text-clay-800; }
+  h4 { @apply font-serif text-xl font-medium text-clay-700; }
+  p  { @apply text-base leading-relaxed text-clay-600; }
+  small { @apply text-sm text-clay-500; }
+}
+
+/* ──────────────────────────────────────────────
+   PART 9: Utility Classes
+   ────────────────────────────────────────────── */
+@layer utilities {
+  /* Card hover with breath feel */
+  .card-hover {
+    @apply transition-all;
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--ease-out);
+    box-shadow: var(--shadow-card);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Paper texture background */
+  .bg-paper-texture {
+    background-color: var(--color-paper);
+    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* Skeleton loading shimmer */
+  .skeleton {
+    @apply animate-pulse rounded-lg;
+    background: linear-gradient(90deg, var(--color-clay-100) 25%, var(--color-clay-200) 50%, var(--color-clay-100) 75%);
+    background-size: 200% 100%;
+  }
+
+  /* Wood texture gradient */
+  .bg-wood-gradient {
+    background: linear-gradient(135deg, var(--color-clay-200), var(--color-warm-200), var(--color-clay-300));
+  }
+
+  /* Text gradient */
+  .text-gradient-clay {
+    background: linear-gradient(135deg, var(--color-clay-700), var(--color-clay-500));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Category gradient backgrounds */
+  .bg-cat-weaving { background: linear-gradient(135deg, #fef3c7, #fde68a, #fef3c7); }
+  .bg-cat-leather { background: linear-gradient(135deg, #e7e5e4, #d6d3d1, #e7e5e4); }
+  .bg-cat-woodwork { background: linear-gradient(135deg, #fef3c7, #fed7aa, #fef3c7); }
+  .bg-cat-clay { background: linear-gradient(135deg, #ffe4e6, #fecdd3, #ffe4e6); }
+  .bg-cat-embroidery { background: linear-gradient(135deg, #dcfce7, #bbf7d0, #dcfce7); }
+  .bg-cat-other { background: linear-gradient(135deg, #f3e8ff, #e9d5ff, #f3e8ff); }
+
+  /* Text truncation */
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}
+
+/* ──────────────────────────────────────────────
+   PART 10: Scrollbar Styling
+   ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-clay-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-clay-400); }
+
+/* ──────────────────────────────────────────────
+   PART 11: Selection
+   ────────────────────────────────────────────── */
+::selection {
+  background: var(--color-clay-200);
+  color: var(--color-clay-800);
+}
