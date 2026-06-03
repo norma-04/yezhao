@@ -11,7 +11,12 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { SectionHeader } from '@/components/shared/section-header'
 import { FadeUp } from '@/components/shared/animated-container'
-import { topics } from '@/data/community'
+const topics = [
+  { slug: 'showcase', name: '成品展示', icon: '🎨', description: '展示你的手作作品，让更多人看到' },
+  { slug: 'newbie', name: '新手避坑', icon: '🔰', description: '新手经验分享，一起成长' },
+  { slug: 'review', name: '材料测评', icon: '📊', description: '工具和材料的真实使用体验' },
+  { slug: 'activity', name: '活动专区', icon: '🎪', description: '线上活动和挑战赛事' },
+]
 import { cn } from '@/lib/utils'
 
 const MAX_IMAGES = 20

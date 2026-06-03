@@ -1,13 +1,13 @@
 // ─── 野造 · GET /api/materials/[slug] ───
 import { NextRequest, NextResponse } from 'next/server'
-import { getMaterialBySlug } from '@/data/materials'
+import * as MaterialService from '@/lib/supabase/services/material.service'
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const material = getMaterialBySlug(slug)
+  const material = await MaterialService.getMaterialBySlug(slug)
   if (!material) return NextResponse.json({ error: '材料未找到' }, { status: 404 })
   return NextResponse.json(material)
 }

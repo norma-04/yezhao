@@ -1,42 +1,40 @@
 // ─── 野造 · POST/GET /api/favorites ───
 import { NextRequest, NextResponse } from 'next/server'
-
-let favorites: { id: string; userId: string; itemType: string; itemId: string; itemTitle: string; createdAt: string }[] = []
+import { getCurrentUser } from '@/lib/supabase/server'
+import { CommunityService } from '@/lib/supabase/services'
 
 export async function GET(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('userId') ?? 'u10'
-  const type = searchParams.get('type')
-  const userFavorites = type
-    ? favorites.filter((f) => f.userId === userId && f.itemType === type)
-    : favorites.filter((f) => f.userId === userId)
+  const type = searchParams.get('type') ?? undefined
+  const userFavorites = await CommunityService.getUserFavorites(user.id, type)
   return NextResponse.json(userFavorites)
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const body = await request.json()
-  const fav = {
-    id: `fav_${Date.now()}`,
-    userId: body.userId ?? 'u10',
-    itemType: body.itemType,
-    itemId: body.itemId,
-    itemTitle: body.itemTitle,
-    createdAt: new Date().toISOString(),
-  }
-  // Check duplicate
-  const exists = favorites.find((f) => f.userId === fav.userId && f.itemId === fav.itemId && f.itemType === fav.itemType)
-  if (exists) {
-    return NextResponse.json(exists, { status: 200 })
-  }
-  favorites = [fav, ...favorites]
-  return NextResponse.json(fav, { status: 201 })
+  const result = await CommunityService.toggleFavorite(user.id, body.itemType as 'tutorial' | 'material' | 'post', body.itemId)
+  return NextResponse.json(result, { status: result.favorited ? 201 : 200 })
 }
 
 export async function DELETE(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { searchParams } = new URL(request.url)
   const itemId = searchParams.get('itemId')
   const itemType = searchParams.get('itemType')
-  const userId = searchParams.get('userId') ?? 'u10'
-  favorites = favorites.filter((f) => !(f.userId === userId && f.itemId === itemId && f.itemType === itemType))
+  if (!itemId || !itemType) {
+    return NextResponse.json({ error: 'itemId and itemType are required' }, { status: 400 })
+  }
+  await CommunityService.toggleFavorite(user.id, itemType as 'tutorial' | 'material' | 'post', itemId)
   return NextResponse.json({ success: true })
 }

@@ -13,7 +13,6 @@ import { FilterPanel } from '@/components/shared/filter-panel'
 import { EmptyState } from '@/components/shared/empty-state'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/shared/animated-container'
 import { Skeleton } from '@/components/shared/loading-skeleton'
-import { topics, creators, challenges } from '@/data/community'
 import type { CommunityPost, Creator, Challenge } from '@/data/community'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +30,30 @@ export default function CommunityPage() {
   const [activeTopic, setActiveTopic] = useState('all')
   const [sort, setSort] = useState('latest')
   const [page, setPage] = useState(1)
+  const [topics, setTopics] = useState<{ slug: string; name: string; icon: string }[]>([])
+  const [creators, setCreators] = useState<Creator[]>([])
+  const [challenges, setChallenges] = useState<Challenge[]>([])
+
+  useEffect(() => {
+    fetch('/api/community/topics')
+      .then((r) => r.json())
+      .then((d) => setTopics(d.items ?? d))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/community/creators')
+      .then((r) => r.json())
+      .then((d) => setCreators(d.items ?? d))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/community/challenges')
+      .then((r) => r.json())
+      .then((d) => setChallenges(d.items ?? d))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     setLoading(true)

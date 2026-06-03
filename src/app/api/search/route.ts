@@ -1,6 +1,6 @@
 // ─── 野造 · GET /api/search?q=&type= ───
 import { NextRequest, NextResponse } from 'next/server'
-import { searchTutorials } from '@/data/tutorials'
+import * as TutorialService from '@/lib/supabase/services/tutorial.service'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   const tutorials = type === 'all' || type === 'tutorial'
-    ? searchTutorials(query).slice(0, 12)
+    ? (await TutorialService.getTutorials({ search: query, limit: 12 })).items
     : []
 
   // Materials & posts would be searched here when those modules exist

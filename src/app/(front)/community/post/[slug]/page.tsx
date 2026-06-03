@@ -13,9 +13,6 @@ import { TutorialCard } from '@/components/shared/tutorial-card'
 import { Skeleton } from '@/components/shared/loading-skeleton'
 import { cn } from '@/lib/utils'
 import type { CommunityPost, CommunityComment } from '@/data/community'
-import { getPostBySlug } from '@/data/community'
-import { getTutorialBySlug } from '@/data/tutorials'
-import { getMaterialBySlug } from '@/data/materials'
 
 export default function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
@@ -26,14 +23,29 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
   const [imageIndex, setImageIndex] = useState(0)
+  const [relatedTutorials, setRelatedTutorials] = useState<any[]>([])
 
   useEffect(() => {
     setLoading(true)
-    const p = getPostBySlug(slug)
-    setPost(p || null)
-    fetch(`/api/community/comment?post=${slug}`)
+    fetch('/api/community/post/' + slug)
+      .then((r) => {
+        if (!r.ok) throw new Error('Post not found')
+        return r.json()
+      })
+      .then((data) => {
+        setPost(data)
+        if (data.related_tutorial_slugs && data.related_tutorial_slugs.length > 0) {
+          Promise.all(
+            data.related_tutorial_slugs.map((s: string) =>
+              fetch('/api/tutorials/' + s).then((r) => r.ok ? r.json() : null).catch(() => null)
+            )
+          ).then((tutorials) => setRelatedTutorials(tutorials.filter(Boolean)))
+        }
+        setLoading(false)
+      })
+      .catch(() => { setPost(null); setLoading(false) })
+    fetch('/api/community/comment?post=' + slug)
       .then((r) => r.json()).then(setComments).catch(() => {})
-    setLoading(false)
   }, [slug])
 
   const handleLike = () => {
@@ -166,11 +178,9 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
           <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-10">
             <SectionHeader title="📖 关联教程" size="sm" />
             <div className="grid sm:grid-cols-2 gap-4">
-              {post.related_tutorial_slugs.map((s) => {
-                const t = getTutorialBySlug(s)
-                if (!t) return null
-                return <TutorialCard key={s} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category, difficulty: t.difficulty, duration_minutes: t.duration_minutes, author: t.author, favorites_count: t.favorites_count, steps: t.steps.length }} variant="horizontal" />
-              })}
+              {relatedTutorials.map((t: any) => (
+                <TutorialCard key={t.slug} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category, difficulty: t.difficulty, duration_minutes: t.duration_minutes, author: t.author, favorites_count: t.favorites_count, steps: t.steps?.length || 0 }} variant="horizontal" />
+              ))}
             </div>
           </motion.section>
         )}

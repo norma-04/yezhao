@@ -1,36 +1,46 @@
 // ─── 野造 · POST/GET /api/progress ───
 import { NextRequest, NextResponse } from 'next/server'
-
-interface Progress {
-  userId: string; tutorialSlug: string; tutorialTitle: string
-  completedSteps: number; totalSteps: number; completedStepIds: string[]
-  lastLearnedAt: string
-}
-const progressStore: Progress[] = []
+import { getCurrentUser } from '@/lib/supabase/server'
+import { TutorialService } from '@/lib/supabase/services'
 
 export async function GET(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('userId') ?? 'u10'
   const tutorialSlug = searchParams.get('tutorial')
+
   if (tutorialSlug) {
-    const p = progressStore.find((x) => x.userId === userId && x.tutorialSlug === tutorialSlug)
-    return NextResponse.json(p ?? { completedSteps: 0, completedStepIds: [] })
+    const tutorial = await TutorialService.getTutorialBySlug(tutorialSlug)
+    if (!tutorial) return NextResponse.json({ completedSteps: 0, completedStepIds: [] })
+    const progress = await TutorialService.getLearningProgress(user.id, tutorial.id)
+    return NextResponse.json(progress ?? { completedSteps: 0, completedStepIds: [] })
   }
-  return NextResponse.json(progressStore.filter((x) => x.userId === userId))
+
+  const list = await TutorialService.getUserLearningList(user.id)
+  return NextResponse.json(list)
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const body = await request.json()
-  const { userId = 'u10', tutorialSlug, tutorialTitle, stepId, totalSteps } = body
-  let p = progressStore.find((x) => x.userId === userId && x.tutorialSlug === tutorialSlug)
-  if (!p) {
-    p = { userId, tutorialSlug, tutorialTitle, completedSteps: 0, totalSteps, completedStepIds: [], lastLearnedAt: '' }
-    progressStore.push(p)
+  const { tutorialSlug, tutorialTitle, stepId, totalSteps } = body
+
+  const tutorial = await TutorialService.getTutorialBySlug(tutorialSlug)
+  if (!tutorial) return NextResponse.json({ error: 'Tutorial not found' }, { status: 404 })
+
+  let completedStepIds: string[] = []
+  const existing = await TutorialService.getLearningProgress(user.id, tutorial.id)
+  if (existing) {
+    completedStepIds = (existing as any).completed_step_ids || []
   }
-  if (stepId && !p.completedStepIds.includes(stepId)) {
-    p.completedStepIds.push(stepId)
-    p.completedSteps = p.completedStepIds.length
+
+  if (stepId && !completedStepIds.includes(stepId)) {
+    completedStepIds.push(stepId)
   }
-  p.lastLearnedAt = new Date().toISOString()
-  return NextResponse.json(p)
+
+  const data = await TutorialService.updateLearningProgress(user.id, tutorial.id, completedStepIds, totalSteps)
+  return NextResponse.json(data)
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { mockChallenges } from '@/data/user-center'
+import { NotificationService } from '@/lib/supabase/services'
 
 export async function GET() {
-  return NextResponse.json({ items: mockChallenges })
+  const data = await NotificationService.getChallenges()
+  return NextResponse.json({ items: data })
 }

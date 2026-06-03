@@ -13,7 +13,6 @@ import { FeatureCard } from '@/components/shared/feature-card'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CardGridSkeleton } from '@/components/shared/loading-skeleton'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/shared/animated-container'
-import { materialCategories } from '@/data/materials'
 import { cn } from '@/lib/utils'
 import type { MaterialData } from '@/data/materials'
 
@@ -24,12 +23,20 @@ export default function MaterialsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
+  const [materialCategories, setMaterialCategories] = useState<{slug: string; name: string; icon: string; count: number; description: string}[]>([])
 
   useEffect(() => {
     fetch('/api/materials?sort=rating&limit=12')
       .then((r) => r.json())
       .then((d) => setMaterials(d.items))
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/materials/category')
+      .then((r) => r.json())
+      .then((d) => setMaterialCategories(d.categories || d))
+      .catch(() => setMaterialCategories([]))
   }, [])
 
   const handleSearch = (q: string) => {
