@@ -95,12 +95,12 @@ export default function TopicPage({ params }: { params: Promise<{ slug: string }
                         <h3 className="font-serif font-medium text-clay-800 group-hover:text-clay-600 text-sm line-clamp-2">{post.title}</h3>
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-clay-50">
                           <div className="flex items-center gap-1.5">
-                            <Avatar className="h-5 w-5"><AvatarFallback className="text-[10px] bg-clay-200 text-clay-500">{post.author.nickname[0]}</AvatarFallback></Avatar>
-                            <span className="text-xs text-clay-400">{post.author.nickname}</span>
+                            <Avatar className="h-5 w-5"><AvatarFallback className="text-[10px] bg-clay-200 text-clay-500">{(post as any).author?.nickname?.[0] || '?'}</AvatarFallback></Avatar>
+                            <span className="text-xs text-clay-400">{(post as any).author?.nickname || '未知'}</span>
                           </div>
                           <div className="flex items-center gap-2.5 text-xs text-clay-400">
-                            <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" />{post.likes_count}</span>
-                            <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{post.comments_count}</span>
+                            <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" />{(post as any).likes_count || 0}</span>
+                            <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{(post as any).comments_count || 0}</span>
                           </div>
                         </div>
                       </div>

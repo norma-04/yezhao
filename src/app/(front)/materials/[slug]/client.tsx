@@ -214,7 +214,7 @@ export function MaterialDetailClient({ material: m, relatedTutorials }: { materi
                 <SectionHeader title="📖 使用该材料的教程" size="sm" />
                 <div className="grid sm:grid-cols-2 gap-4">
                   {relatedTutorials.map((t) => (
-                    <TutorialCard key={t.id} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category, difficulty: t.difficulty, duration_minutes: t.duration_minutes, author: t.author, favorites_count: t.favorites_count, steps: t.steps.length }} variant="horizontal" />
+                    <TutorialCard key={t.id} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category as any, difficulty: t.difficulty as any, duration_minutes: t.duration_minutes, author: (t as any).author || { id: '', nickname: '未知', avatar_url: null }, favorites_count: t.favorites_count, steps: (t as any).steps?.length || 0 }} variant="horizontal" />
                   ))}
                 </div>
               </motion.section>

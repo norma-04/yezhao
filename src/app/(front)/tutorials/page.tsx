@@ -208,12 +208,12 @@ function TutorialListContent() {
                           id: t.slug,
                           title: t.title,
                           cover_url: t.cover_url,
-                          category: t.category,
-                          difficulty: t.difficulty,
+                          category: t.category as Category,
+                          difficulty: t.difficulty as Difficulty,
                           duration_minutes: t.duration_minutes,
-                          author: t.author,
+                          author: (t as any).author || { id: '', nickname: '未知', avatar_url: null },
                           favorites_count: t.favorites_count,
-                          steps: t.steps.length,
+                          steps: (t as any).steps?.length || 0,
                         }}
                         variant="grid"
                       />

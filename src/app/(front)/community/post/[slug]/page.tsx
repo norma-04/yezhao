@@ -111,10 +111,10 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
           {/* Author row */}
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-clay-100">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10"><AvatarFallback className="bg-clay-200 text-clay-600">{post.author.nickname[0]}</AvatarFallback></Avatar>
+              <Avatar className="h-10 w-10"><AvatarFallback className="bg-clay-200 text-clay-600">{(post as any).author?.nickname?.[0] || '?'}</AvatarFallback></Avatar>
               <div>
-                <p className="font-medium text-clay-700 text-sm">{post.author.nickname}</p>
-                <p className="text-xs text-clay-400">{post.created_at}</p>
+                <p className="font-medium text-clay-700 text-sm">{(post as any).author?.nickname || '未知'}</p>
+                <p className="text-xs text-clay-400">{(post as any).created_at || ''}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
             <SectionHeader title="📖 关联教程" size="sm" />
             <div className="grid sm:grid-cols-2 gap-4">
               {relatedTutorials.map((t: any) => (
-                <TutorialCard key={t.slug} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category, difficulty: t.difficulty, duration_minutes: t.duration_minutes, author: t.author, favorites_count: t.favorites_count, steps: t.steps?.length || 0 }} variant="horizontal" />
+                <TutorialCard key={t.slug} tutorial={{ id: t.slug, title: t.title, cover_url: t.cover_url, category: t.category as any, difficulty: t.difficulty as any, duration_minutes: t.duration_minutes, author: (t as any).author || { id: '', nickname: '未知', avatar_url: null }, favorites_count: t.favorites_count, steps: (t as any).steps?.length || 0 }} variant="horizontal" />
               ))}
             </div>
           </motion.section>
