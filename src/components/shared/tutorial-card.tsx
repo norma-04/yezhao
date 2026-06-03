@@ -3,6 +3,7 @@
 // Props: tutorial, variant, showAuthor
 // 使用场景: 教程列表、首页热门、搜索列表
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Clock, Heart } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -68,8 +69,12 @@ export function TutorialCard({ tutorial: t, variant = 'grid', showAuthor = true,
     return (
       <Link href={`/tutorials/${t.id}`} className={cn('block group', className)}>
         <div className="flex gap-5 p-4 rounded-2xl bg-white card-hover">
-          <div className={cn('w-40 lg:w-52 aspect-[4/3] rounded-xl shrink-0 flex items-center justify-center text-4xl', catGradients[t.category])}>
-            <span>{catEmoji[t.category]}</span>
+          <div className={cn('w-40 lg:w-52 aspect-[4/3] rounded-xl shrink-0 relative overflow-hidden', !t.cover_url && catGradients[t.category])}>
+            {t.cover_url ? (
+              <Image src={t.cover_url} alt={t.title} fill className="object-cover" sizes="200px" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-4xl"><span>{catEmoji[t.category]}</span></div>
+            )}
           </div>
           <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-2 mb-2">
@@ -99,9 +104,15 @@ export function TutorialCard({ tutorial: t, variant = 'grid', showAuthor = true,
     <Link href={`/tutorials/${t.id}`} className={cn('block group', className)}>
       <div className="rounded-2xl bg-white overflow-hidden card-hover">
         {/* Cover */}
-        <div className={cn('aspect-[4/3] flex items-center justify-center text-5xl', catGradients[t.category])}>
-          <span className="opacity-40">{catEmoji[t.category]}</span>
-        </div>
+        {t.cover_url ? (
+          <div className="aspect-[4/3] relative overflow-hidden">
+            <Image src={t.cover_url} alt={t.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+          </div>
+        ) : (
+          <div className={cn('aspect-[4/3] flex items-center justify-center text-5xl', catGradients[t.category])}>
+            <span className="opacity-40">{catEmoji[t.category]}</span>
+          </div>
+        )}
         {/* Content */}
         <div className="p-5">
           <div className="flex items-center gap-2 mb-2">
