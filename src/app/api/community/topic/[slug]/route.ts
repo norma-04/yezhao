@@ -1,6 +1,5 @@
 // ─── 野造 · GET /api/community/topic/[slug] ───
 import { NextRequest, NextResponse } from 'next/server'
-import * as CommunityService from '@/lib/supabase/services/community.service'
 
 const topics = [
   { slug: 'showcase', name: '成品展示', icon: '🎨', description: '展示你的手作作品，让更多人看到' },
@@ -16,6 +15,7 @@ export async function GET(
   const { slug } = await params
   const topic = topics.find((t) => t.slug === slug)
   if (!topic) return NextResponse.json({ error: '话题未找到' }, { status: 404 })
-  const { items: posts, total } = await CommunityService.getPosts({ topic: slug })
+  const { getPosts } = await import('@/lib/supabase/services/community.service')
+  const { items: posts, total } = await getPosts({ topic: slug })
   return NextResponse.json({ topic, posts, total })
 }
