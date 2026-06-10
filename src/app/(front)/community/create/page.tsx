@@ -140,20 +140,21 @@ export default function CreatePostPage() {
     )
 
     const newUrls: string[] = []
-    let errors = 0
+    const errorMessages: string[] = []
 
     results.forEach((r, i) => {
       setUploadProgress((prev) => ({ ...prev, done: prev.done + 1 }))
       if (r.status === 'fulfilled') {
         newUrls.push(r.value)
       } else {
-        errors++
+        const errMsg = r.reason?.message || r.reason || '未知错误'
+        errorMessages.push(`${files[i].name}: ${errMsg}`)
         console.error(`Upload failed: ${files[i].name}`, r.reason)
       }
     })
 
-    if (errors > 0) {
-      setUploadError(`${errors} 张图片上传失败，请重试`)
+    if (errorMessages.length > 0) {
+      setUploadError(errorMessages[0])
     }
 
     if (newUrls.length > 0) {
