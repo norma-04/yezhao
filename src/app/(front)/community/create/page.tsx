@@ -1,29 +1,80 @@
 // ─── 野造 · 发布作品页 ───
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import { motion } from 'framer-motion'
+import NextImage from 'next/image'
 import { ArrowLeft, Upload, X, Plus, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { SectionHeader } from '@/components/shared/section-header'
 import { FadeUp } from '@/components/shared/animated-container'
 import { getSupabaseClient } from '@/lib/supabase/client'
-import { generateFilePath, compressImage } from '@/lib/supabase/storage'
+import { generateFilePath } from '@/lib/supabase/storage'
 import { cn } from '@/lib/utils'
 
 const topics = [
-  { slug: 'showcase', name: '成品展示', icon: '🎨', description: '展示你的手作作品，让更多人看到' },
-  { slug: 'newbie', name: '新手避坑', icon: '🔰', description: '新手经验分享，一起成长' },
-  { slug: 'review', name: '材料测评', icon: '📊', description: '工具和材料的真实使用体验' },
-  { slug: 'activity', name: '活动专区', icon: '🎪', description: '线上活动和挑战赛事' },
+  { slug: 'showcase', name: '成品展示', icon: '🎨' },
+  { slug: 'newbie', name: '新手避坑', icon: '🔰' },
+  { slug: 'review', name: '材料测评', icon: '📊' },
+  { slug: 'activity', name: '活动专区', icon: '🎪' },
 ]
 
 const MAX_IMAGES = 20
+
+// ─── Smart compression: only compress if needed ───
+async function smartCompress(file: File): Promise<File> {
+  // Already small enough — skip compression
+  if (file.size < 300 * 1024) return file
+
+  // Already WebP — skip (can't improve much)
+  if (file.type === 'image/webp') return file
+
+  // Skip GIF (animation would be lost)
+  if (file.type === 'image/gif') return file
+
+  // Compress to WebP on a separate canvas
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      if (width > 1920) { height = (height * 1920) / width; width = 1920 }
+      if (height > 1920) { width = (width * 1920) / height; height = 1920 }
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(file); return }
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        if (blob && blob.size < file.size) {
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' }))
+        } else {
+          resolve(file) // compression didn't help, use original
+        }
+      }, 'image/webp', 0.78)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
+// ─── Upload a single file ───
+async function uploadOne(
+  file: File, userId: string, supabase: ReturnType<typeof getSupabaseClient>
+): Promise<string> {
+  const processed = await smartCompress(file)
+  const path = generateFilePath(userId, 'community', file.name)
+  const { error } = await supabase.storage
+    .from('community')
+    .upload(path, processed, { upsert: false, contentType: processed.type })
+  if (error) throw new Error(error.message)
+  const { data: urlData } = supabase.storage.from('community').getPublicUrl(path)
+  return urlData.publicUrl
+}
 
 export default function CreatePostPage() {
   const router = useRouter()
@@ -34,76 +85,77 @@ export default function CreatePostPage() {
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [images, setImages] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 })
   const [uploadError, setUploadError] = useState('')
   const [processSteps, setProcessSteps] = useState<{ title: string; description: string }[]>([])
   const [materials, setMaterials] = useState<{ name: string; slug: string | null }[]>([])
   const [materialInput, setMaterialInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // ─── Real image upload to Supabase Storage ───
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  const uploading = uploadProgress.total > 0
+
+  // ─── Parallel image upload with progress ───
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
 
     setUploadError('')
-    setUploading(true)
+
+    const files = Array.from(fileList).filter((f) => {
+      if (!f.type.startsWith('image/')) {
+        setUploadError(`${f.name} 不是图片文件`)
+        return false
+      }
+      if (f.size > 50 * 1024 * 1024) {
+        setUploadError(`${f.name} 超过 50MB 限制`)
+        return false
+      }
+      return true
+    })
+
+    if (files.length === 0) return
+
+    setUploadProgress({ done: 0, total: files.length })
 
     const supabase = getSupabaseClient()
-
-    // Get current user for file path
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setUploadError('请先登录后再上传图片')
-      setUploading(false)
+      setUploadProgress({ done: 0, total: 0 })
       return
     }
 
+    // Upload ALL files in parallel
+    const results = await Promise.allSettled(
+      files.map((file) => uploadOne(file, user.id, supabase))
+    )
+
     const newUrls: string[] = []
+    let errors = 0
 
-    for (const file of Array.from(files)) {
-      // Validate
-      if (!file.type.startsWith('image/')) {
-        setUploadError(`"${file.name}" 不是图片文件`)
-        continue
+    results.forEach((r, i) => {
+      setUploadProgress((prev) => ({ ...prev, done: prev.done + 1 }))
+      if (r.status === 'fulfilled') {
+        newUrls.push(r.value)
+      } else {
+        errors++
+        console.error(`Upload failed: ${files[i].name}`, r.reason)
       }
-      if (file.size > 50 * 1024 * 1024) {
-        setUploadError(`"${file.name}" 超过 50MB 限制`)
-        continue
-      }
+    })
 
-      try {
-        // Compress to WebP
-        const compressed = await compressImage(file, 1920, 1920, 0.85)
-        const compressedFile = new File([compressed], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' })
-
-        // Generate path and upload
-        const path = generateFilePath(user.id, 'community', file.name)
-        const { error } = await supabase.storage
-          .from('community')
-          .upload(path, compressedFile, { upsert: false, contentType: 'image/webp' })
-
-        if (error) {
-          setUploadError(`上传失败: ${error.message}`)
-          continue
-        }
-
-        const { data: urlData } = supabase.storage.from('community').getPublicUrl(path)
-        newUrls.push(urlData.publicUrl)
-      } catch (err) {
-        setUploadError(`上传 "${file.name}" 时出错`)
-        console.error('Upload error:', err)
-      }
+    if (errors > 0) {
+      setUploadError(`${errors} 张图片上传失败，请重试`)
     }
 
     if (newUrls.length > 0) {
       setImages((prev) => [...prev, ...newUrls].slice(0, MAX_IMAGES))
     }
-    setUploading(false)
 
-    // Reset file input so the same file can be re-selected
+    // Small delay so user sees "3/3" complete before spinner disappears
+    setTimeout(() => setUploadProgress({ done: 0, total: 0 }), 300)
+
     if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+  }, [])
 
   const removeImage = (i: number) => setImages(images.filter((_, idx) => idx !== i))
 
@@ -179,7 +231,7 @@ export default function CreatePostPage() {
             <div className="grid grid-cols-4 lg:grid-cols-6 gap-3">
               {images.map((url, i) => (
                 <div key={i} className="aspect-square rounded-xl relative overflow-hidden bg-clay-100 group">
-                  <Image src={url} alt={`作品图片 ${i + 1}`} fill className="object-cover" sizes="150px" />
+                  <NextImage src={url} alt={`作品图片 ${i + 1}`} fill className="object-cover" sizes="150px" />
                   <button onClick={() => removeImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <X className="h-3 w-3 text-clay-500" />
                   </button>
@@ -194,7 +246,7 @@ export default function CreatePostPage() {
                   {uploading ? (
                     <>
                       <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="text-xs mt-1">上传中...</span>
+                      <span className="text-xs mt-1">{uploadProgress.done}/{uploadProgress.total}</span>
                     </>
                   ) : (
                     <>
