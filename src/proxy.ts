@@ -18,9 +18,19 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some((r) => pathname === r || pathname.startsWith(r + '/'))
 }
 
+// Base64 decode (works in edge runtime — no Node.js Buffer)
+function base64Decode(str: string): string {
+  // Convert base64url to standard base64
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  // atob() is available in Web/Edge runtimes
+  if (typeof atob !== 'undefined') return atob(base64)
+  // Fallback for Node.js
+  return Buffer.from(base64, 'base64').toString('utf-8')
+}
+
 // Parse Supabase auth cookie to check if user has a valid session
 // Cookie format: sb-<project-ref>-auth-token = base64({ access_token, refresh_token, ... })
-function getSessionFromCookies(request: NextRequest): { userId: string; accessToken: string } | null {
+function getSessionFromCookies(request: NextRequest): { userId: string } | null {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const projectRef = supabaseUrl.match(/https?:\/\/([^.]+)/)?.[1] || ''
   const cookieName = `sb-${projectRef}-auth-token`
@@ -29,18 +39,18 @@ function getSessionFromCookies(request: NextRequest): { userId: string; accessTo
   if (!cookie) return null
 
   try {
-    const raw = JSON.parse(Buffer.from(cookie.value, 'base64').toString('utf-8'))
+    const raw = JSON.parse(base64Decode(cookie.value))
     if (!raw.access_token) return null
 
-    // Decode JWT payload (without verification — just to get user id)
+    // Decode JWT payload (without verification — just to check expiry)
     const payload = raw.access_token.split('.')[1]
     if (!payload) return null
-    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'))
+    const decoded = JSON.parse(base64Decode(payload))
 
     // Check if token is expired
     if (decoded.exp && decoded.exp * 1000 < Date.now()) return null
 
-    return { userId: decoded.sub, accessToken: raw.access_token }
+    return { userId: decoded.sub }
   } catch {
     return null
   }
