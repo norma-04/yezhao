@@ -1,17 +1,11 @@
 // ─── 野造 · Middleware ───
 // Session refresh + Route protection + RBAC
+// Performance: public routes skip Supabase entirely; auth/protected routes use
+//   getSession() (local cookie check, ~0ms); only admin routes hit the network.
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // ─── Route Categories ───
-const PUBLIC_ROUTES = [
-  '/',
-  '/tutorials',
-  '/materials',
-  '/community',
-  '/search',
-]
-
 const AUTH_ROUTES = [
   '/auth/login',
   '/auth/register',
@@ -77,67 +71,41 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── Early return for public routes: no Supabase call needed ──
+  const needsAuth = matchesRoute(pathname, AUTH_ROUTES)
+  const needsProtection = matchesRoute(pathname, PROTECTED_ROUTES)
+  const needsAdmin = matchesRoute(pathname, ADMIN_ROUTES)
+
+  if (!needsAuth && !needsProtection && !needsAdmin) {
+    return NextResponse.next()
+  }
+
   const { supabase, response } = createMiddlewareClient(request)
 
-  // Refresh session (keeps auth state fresh)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const isAuthenticated = !!user
-
-  // Check user role for admin routes
-  let userRole: string | null = null
-  if (isAuthenticated) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, status')
-      .eq('id', user.id)
-      .single()
-
-    userRole = profile?.role || 'user'
-
-    // Block banned users
-    if (profile?.status === 'banned') {
-      // Sign them out
-      await supabase.auth.signOut()
-      const loginUrl = new URL('/auth/login', request.url)
-      loginUrl.searchParams.set('error', 'banned')
-      return NextResponse.redirect(loginUrl)
-    }
-  }
-
-  // ─── Route Protection Logic ───
-
-  // 1. Auth routes (login/register): redirect to home if already authenticated
-  if (matchesRoute(pathname, AUTH_ROUTES)) {
-    if (isAuthenticated) {
-      return NextResponse.redirect(new URL('/', request.url))
+  // ── Auth routes: fast local session check (getSession reads cookies, no network) ──
+  if (needsAuth) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+    } catch {
+      // getSession failed — allow access to auth pages
     }
     return response
   }
 
-  // 2. Admin routes: require admin role
-  if (matchesRoute(pathname, ADMIN_ROUTES)) {
-    if (!isAuthenticated) {
-      const loginUrl = new URL('/auth/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-
-    if (userRole !== 'admin' && userRole !== 'super_admin') {
-      // Render a 403 or redirect
-      const forbiddenUrl = new URL('/', request.url)
-      forbiddenUrl.searchParams.set('error', 'forbidden')
-      return NextResponse.redirect(forbiddenUrl)
-    }
-
-    return response
-  }
-
-  // 3. Protected routes: require authentication
-  if (matchesRoute(pathname, PROTECTED_ROUTES)) {
-    if (!isAuthenticated) {
+  // ── Protected routes: local session check ──
+  if (needsProtection) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        const loginUrl = new URL('/auth/login', request.url)
+        loginUrl.searchParams.set('redirect', pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+    } catch {
+      // getSession failed — redirect to login for safety
       const loginUrl = new URL('/auth/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
@@ -145,18 +113,46 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
-  // 4. API routes: check auth headers
-  if (pathname.startsWith('/api/admin')) {
-    if (!isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // ── Admin routes: full verification (network calls unavoidable for security) ──
+  if (needsAdmin) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        const loginUrl = new URL('/auth/login', request.url)
+        loginUrl.searchParams.set('redirect', pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, status')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.status === 'banned') {
+        await supabase.auth.signOut()
+        const loginUrl = new URL('/auth/login', request.url)
+        loginUrl.searchParams.set('error', 'banned')
+        return NextResponse.redirect(loginUrl)
+      }
+
+      const role = profile?.role || 'user'
+      if (role !== 'admin' && role !== 'super_admin') {
+        const forbiddenUrl = new URL('/', request.url)
+        forbiddenUrl.searchParams.set('error', 'forbidden')
+        return NextResponse.redirect(forbiddenUrl)
+      }
+    } catch {
+      // Auth check failed — redirect to login for safety
+      const loginUrl = new URL('/auth/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
     }
-    if (userRole !== 'admin' && userRole !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+
     return response
   }
 
-  // 5. Public routes: allow all
   return response
 }
 

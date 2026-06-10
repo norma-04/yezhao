@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -45,17 +46,24 @@ export function MaterialDetailClient({ material: m, relatedTutorials }: { materi
         {/* ── Header ── */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-clay-100 p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-            <div className={cn(
-              'w-full lg:w-48 h-48 rounded-2xl shrink-0 flex items-center justify-center text-6xl',
-              m.category === 'weaving' ? 'bg-gradient-to-br from-amber-100 to-orange-100' :
-              m.category === 'leather' ? 'bg-gradient-to-br from-stone-200 to-amber-100' :
-              m.category === 'woodwork' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
-              m.category === 'clay' ? 'bg-gradient-to-br from-rose-100 to-pink-100' :
-              m.category === 'embroidery' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
-              'bg-gradient-to-br from-purple-50 to-violet-100'
-            )}>
-              {catEmoji[m.category]}
-            </div>
+            {/* Cover image or category gradient fallback */}
+            {m.image_url ? (
+              <div className="w-full lg:w-48 h-48 rounded-2xl shrink-0 relative overflow-hidden">
+                <Image src={m.image_url} alt={m.name} fill className="object-cover" sizes="200px" />
+              </div>
+            ) : (
+              <div className={cn(
+                'w-full lg:w-48 h-48 rounded-2xl shrink-0 flex items-center justify-center text-6xl',
+                m.category === 'weaving' ? 'bg-gradient-to-br from-amber-100 to-orange-100' :
+                m.category === 'leather' ? 'bg-gradient-to-br from-stone-200 to-amber-100' :
+                m.category === 'woodwork' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
+                m.category === 'clay' ? 'bg-gradient-to-br from-rose-100 to-pink-100' :
+                m.category === 'embroidery' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+                'bg-gradient-to-br from-purple-50 to-violet-100'
+              )}>
+                {catEmoji[m.category]}
+              </div>
+            )}
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <Badge variant="secondary" className="text-xs">{catLabels[m.category]}</Badge>

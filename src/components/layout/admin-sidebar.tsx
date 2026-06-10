@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ADMIN_NAV_ITEMS } from '@/lib/constants'
 import { useUIStore } from '@/lib/stores/ui-store'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { cn } from '@/lib/utils'
 
@@ -76,7 +77,9 @@ export function AdminSidebar() {
           <button
             onClick={() => {
               useAuthStore.getState().signOut()
-              window.location.href = '/admin/login'
+              getSupabaseClient().auth.signOut().finally(() => {
+                window.location.href = '/auth/login'
+              })
             }}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-clay-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
           >

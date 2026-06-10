@@ -1,44 +1,108 @@
 // ─── 野造 · 发布作品页 ───
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Upload, X, Plus, Image as ImageIcon, Send } from 'lucide-react'
+import { ArrowLeft, Upload, X, Plus, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { SectionHeader } from '@/components/shared/section-header'
 import { FadeUp } from '@/components/shared/animated-container'
+import { getSupabaseClient } from '@/lib/supabase/client'
+import { generateFilePath, compressImage } from '@/lib/supabase/storage'
+import { cn } from '@/lib/utils'
+
 const topics = [
   { slug: 'showcase', name: '成品展示', icon: '🎨', description: '展示你的手作作品，让更多人看到' },
   { slug: 'newbie', name: '新手避坑', icon: '🔰', description: '新手经验分享，一起成长' },
   { slug: 'review', name: '材料测评', icon: '📊', description: '工具和材料的真实使用体验' },
   { slug: 'activity', name: '活动专区', icon: '🎪', description: '线上活动和挑战赛事' },
 ]
-import { cn } from '@/lib/utils'
 
 const MAX_IMAGES = 20
 
 export default function CreatePostPage() {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [selectedTopic, setSelectedTopic] = useState('showcase')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [images, setImages] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [processSteps, setProcessSteps] = useState<{ title: string; description: string }[]>([])
   const [materials, setMaterials] = useState<{ name: string; slug: string | null }[]>([])
   const [materialInput, setMaterialInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Simulate image "upload" - just add colored placeholders
-  const addImage = () => {
-    if (images.length >= MAX_IMAGES) return
-    const colors = ['from-amber-100 to-orange-100', 'from-stone-200 to-amber-100', 'from-green-50 to-emerald-100', 'from-rose-100 to-pink-100', 'from-blue-50 to-sky-100', 'from-purple-50 to-violet-100']
-    setImages([...images, colors[images.length % colors.length]])
+  // ─── Real image upload to Supabase Storage ───
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadError('')
+    setUploading(true)
+
+    const supabase = getSupabaseClient()
+
+    // Get current user for file path
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setUploadError('请先登录后再上传图片')
+      setUploading(false)
+      return
+    }
+
+    const newUrls: string[] = []
+
+    for (const file of Array.from(files)) {
+      // Validate
+      if (!file.type.startsWith('image/')) {
+        setUploadError(`"${file.name}" 不是图片文件`)
+        continue
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setUploadError(`"${file.name}" 超过 50MB 限制`)
+        continue
+      }
+
+      try {
+        // Compress to WebP
+        const compressed = await compressImage(file, 1920, 1920, 0.85)
+        const compressedFile = new File([compressed], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' })
+
+        // Generate path and upload
+        const path = generateFilePath(user.id, 'community', file.name)
+        const { error } = await supabase.storage
+          .from('community')
+          .upload(path, compressedFile, { upsert: false, contentType: 'image/webp' })
+
+        if (error) {
+          setUploadError(`上传失败: ${error.message}`)
+          continue
+        }
+
+        const { data: urlData } = supabase.storage.from('community').getPublicUrl(path)
+        newUrls.push(urlData.publicUrl)
+      } catch (err) {
+        setUploadError(`上传 "${file.name}" 时出错`)
+        console.error('Upload error:', err)
+      }
+    }
+
+    if (newUrls.length > 0) {
+      setImages((prev) => [...prev, ...newUrls].slice(0, MAX_IMAGES))
+    }
+    setUploading(false)
+
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const removeImage = (i: number) => setImages(images.filter((_, idx) => idx !== i))
@@ -100,18 +164,44 @@ export default function CreatePostPage() {
           {/* Image Upload */}
           <section>
             <h3 className="font-serif font-medium text-clay-700 mb-3">📸 作品图片 <span className="text-clay-400 text-sm font-normal">({images.length}/{MAX_IMAGES})</span></h3>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            {uploadError && (
+              <p className="text-red-500 text-sm mb-3">{uploadError}</p>
+            )}
             <div className="grid grid-cols-4 lg:grid-cols-6 gap-3">
-              {images.map((color, i) => (
-                <div key={i} className={cn('aspect-square rounded-xl bg-gradient-to-br relative group', color)}>
+              {images.map((url, i) => (
+                <div key={i} className="aspect-square rounded-xl relative overflow-hidden bg-clay-100 group">
+                  <Image src={url} alt={`作品图片 ${i + 1}`} fill className="object-cover" sizes="150px" />
                   <button onClick={() => removeImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <X className="h-3 w-3 text-clay-500" />
                   </button>
                 </div>
               ))}
               {images.length < MAX_IMAGES && (
-                <button onClick={addImage} className="aspect-square rounded-xl border-2 border-dashed border-clay-300 flex flex-col items-center justify-center text-clay-400 hover:border-clay-400 hover:text-clay-500 transition-colors">
-                  <Upload className="h-6 w-6" />
-                  <span className="text-xs mt-1">添加图片</span>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="aspect-square rounded-xl border-2 border-dashed border-clay-300 flex flex-col items-center justify-center text-clay-400 hover:border-clay-400 hover:text-clay-500 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="text-xs mt-1">上传中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6" />
+                      <span className="text-xs mt-1">添加图片</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -217,7 +307,7 @@ export default function CreatePostPage() {
 
           {/* Submit */}
           <div className="flex items-center gap-3 pt-4">
-            <Button onClick={handleSubmit} disabled={!title.trim() || !content.trim() || submitting} className="rounded-full px-8" size="lg">
+            <Button onClick={handleSubmit} disabled={!title.trim() || !content.trim() || submitting || uploading} className="rounded-full px-8" size="lg">
               {submitting ? '发布中...' : '发布作品'}
               <Send className="ml-2 h-4 w-4" />
             </Button>

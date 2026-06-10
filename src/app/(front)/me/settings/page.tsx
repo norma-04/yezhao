@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { SectionHeader } from '@/components/shared/section-header'
 import { FadeUp } from '@/components/shared/animated-container'
+import { getSupabaseClient } from '@/lib/supabase/client'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -100,7 +102,12 @@ export default function SettingsPage() {
             <h3 className="font-serif font-medium text-red-600 mb-2">危险操作</h3>
             <div className="flex items-center justify-between">
               <p className="text-sm text-clay-500">退出当前账号</p>
-              <Button variant="outline" className="rounded-full border-red-200 text-red-500 hover:bg-red-50" onClick={() => router.push('/')}>
+              <Button variant="outline" className="rounded-full border-red-200 text-red-500 hover:bg-red-50" onClick={() => {
+                useAuthStore.getState().signOut()
+                getSupabaseClient().auth.signOut().finally(() => {
+                  window.location.href = '/'
+                })
+              }}>
                 <LogOut className="h-4 w-4 mr-1.5" /> 退出登录
               </Button>
             </div>

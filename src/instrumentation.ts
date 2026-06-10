@@ -3,17 +3,16 @@
 // Runs once when the server starts
 
 export async function register() {
-  // Only run in production with Sentry configured
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    // Sentry server-side initialization
-    // Uncomment when @sentry/nextjs is installed:
-    // const Sentry = await import('@sentry/nextjs')
-    // Sentry.init({
-    //   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-    //   tracesSampleRate: 0.1,
-    //   environment: 'production',
-    // })
-    console.log('[Instrumentation] Server started — monitoring ready')
+  // Polyfill WebSocket for Node.js 18 (EdgeOne Pages, etc.)
+  // Supabase Realtime client requires WebSocket, which is only native in Node.js 22+
+  if (typeof globalThis.WebSocket === 'undefined') {
+    try {
+      const { WebSocket } = await import('ws')
+      ;(globalThis as unknown as Record<string, unknown>).WebSocket = WebSocket
+      console.log('[Instrumentation] WebSocket polyfill applied (Node.js < 22)')
+    } catch {
+      console.warn('[Instrumentation] WebSocket polyfill unavailable — Realtime features disabled')
+    }
   }
 
   if (process.env.NODE_ENV === 'development') {

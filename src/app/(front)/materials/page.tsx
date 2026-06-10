@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Search, Star, ArrowRight, BookOpen, AlertTriangle, ShoppingBag, Lightbulb } from 'lucide-react'
@@ -149,18 +150,24 @@ export default function MaterialsPage() {
                 >
                   <Link href={`/materials/${m.slug}`} className="block group">
                     <div className="rounded-2xl bg-white border border-clay-100 overflow-hidden card-hover h-full flex flex-col">
-                      {/* Category gradient area */}
-                      <div className={cn(
-                        'h-32 flex items-center justify-center text-5xl',
-                        m.category === 'weaving' ? 'bg-gradient-to-br from-amber-100 to-orange-100' :
-                        m.category === 'leather' ? 'bg-gradient-to-br from-stone-200 to-amber-100' :
-                        m.category === 'woodwork' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
-                        m.category === 'clay' ? 'bg-gradient-to-br from-rose-100 to-pink-100' :
-                        m.category === 'embroidery' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
-                        'bg-gradient-to-br from-purple-50 to-violet-100'
-                      )}>
-                        {{ weaving: '🧶', leather: '👜', woodwork: '🪵', clay: '🏺', embroidery: '🪡', other: '✨' }[m.category]}
-                      </div>
+                      {/* Cover image or category gradient fallback */}
+                      {m.image_url ? (
+                        <div className="h-32 relative overflow-hidden">
+                          <Image src={m.image_url} alt={m.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+                        </div>
+                      ) : (
+                        <div className={cn(
+                          'h-32 flex items-center justify-center text-5xl',
+                          m.category === 'weaving' ? 'bg-gradient-to-br from-amber-100 to-orange-100' :
+                          m.category === 'leather' ? 'bg-gradient-to-br from-stone-200 to-amber-100' :
+                          m.category === 'woodwork' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
+                          m.category === 'clay' ? 'bg-gradient-to-br from-rose-100 to-pink-100' :
+                          m.category === 'embroidery' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+                          'bg-gradient-to-br from-purple-50 to-violet-100'
+                        )}>
+                          {{ weaving: '🧶', leather: '👜', woodwork: '🪵', clay: '🏺', embroidery: '🪡', other: '✨' }[m.category]}
+                        </div>
+                      )}
                       <div className="p-5 flex-1 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="secondary" className="text-xs">{m.category === 'weaving' ? '编织' : m.category === 'leather' ? '皮具' : m.category === 'woodwork' ? '木工' : m.category === 'clay' ? '黏土' : m.category === 'embroidery' ? '刺绣' : '其他'}</Badge>

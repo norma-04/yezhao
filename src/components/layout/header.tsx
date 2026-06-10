@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { NAV_ITEMS } from '@/lib/constants'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { cn } from '@/lib/utils'
 
@@ -113,7 +114,12 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => { useAuthStore.getState().signOut(); router.push('/') }}
+                  onClick={() => {
+                    useAuthStore.getState().signOut()
+                    getSupabaseClient().auth.signOut().finally(() => {
+                      window.location.href = '/'
+                    })
+                  }}
                 >
                   <LogOut className="h-4 w-4" /> 退出登录
                 </DropdownMenuItem>
