@@ -2,6 +2,7 @@
 // Session refresh + Route protection + RBAC
 // Performance: public routes skip Supabase entirely; auth/protected routes use
 //   getSession() (local cookie check, ~0ms); only admin routes hit the network.
+import '@/lib/polyfills/websocket' // MUST be before @supabase/ssr for Node 18
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
