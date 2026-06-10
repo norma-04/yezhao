@@ -69,9 +69,10 @@ export function generateFilePath(userId: string, folder: string, fileName: strin
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 8)
   const ext = fileName.split('.').pop() || 'jpg'
+  // ASCII-only: Supabase Storage key forbids non-ASCII chars
   const safeName = fileName
     .replace(/\.[^/.]+$/, '')
-    .replace(/[^a-zA-Z0-9一-鿿]/g, '-')
+    .replace(/[^a-zA-Z0-9]/g, '-')
     .substring(0, 30)
 
   return `${userId}/${folder}/${timestamp}-${random}-${safeName}.${ext}`
