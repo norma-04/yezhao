@@ -9,7 +9,9 @@ const AUTH_ROUTES = [
   '/auth/login', '/auth/register', '/auth/forgot-password',
   '/auth/reset-password', '/auth/callback',
 ]
-const PROTECTED_ROUTES = ['/me', '/community/create']
+// NOTE: /me and /community/create auth checks are done client-side (via useAuthStore)
+// because edge runtime cookie parsing is unreliable across platforms (EdgeOne, etc.)
+const PROTECTED_ROUTES: string[] = []
 const ADMIN_ROUTES = ['/admin']
 
 // ─── Helpers ───

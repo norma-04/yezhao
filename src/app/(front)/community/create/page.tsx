@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { FadeUp } from '@/components/shared/animated-container'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { generateFilePath } from '@/lib/supabase/storage'
 import { cn } from '@/lib/utils'
 
@@ -79,6 +80,7 @@ async function uploadOne(
 export default function CreatePostPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [selectedTopic, setSelectedTopic] = useState('showcase')
@@ -92,6 +94,12 @@ export default function CreatePostPage() {
   const [materialInput, setMaterialInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // Redirect to login if not authenticated (replaces middleware check)
+  if (!authLoading && !isAuthenticated) {
+    router.replace('/auth/login?redirect=/community/create')
+    return null
+  }
 
   const uploading = uploadProgress.total > 0
 

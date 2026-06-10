@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Heart, BookOpen, Image, Calendar, Clock, Star, TrendingUp, Settings, ArrowRight, Play } from 'lucide-react'
@@ -12,12 +13,21 @@ import { SectionHeader } from '@/components/shared/section-header'
 import { FeatureCard } from '@/components/shared/feature-card'
 import { Skeleton } from '@/components/shared/loading-skeleton'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/shared/animated-container'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import type { UserProfile } from '@/data/user-center'
 import { cn } from '@/lib/utils'
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Redirect to login if not authenticated
+  if (!authLoading && !isAuthenticated) {
+    router.replace('/auth/login?redirect=/me')
+    return null
+  }
 
   useEffect(() => {
     fetch('/api/me').then((r) => r.json()).then(setProfile).finally(() => setLoading(false))
