@@ -5,7 +5,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import NextImage from 'next/image'
-import { ArrowLeft, Upload, X, Plus, Send, Loader2 } from 'lucide-react'
+import { ArrowLeft, Upload, X, Plus, Send, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -91,6 +91,7 @@ export default function CreatePostPage() {
   const [materials, setMaterials] = useState<{ name: string; slug: string | null }[]>([])
   const [materialInput, setMaterialInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const uploading = uploadProgress.total > 0
 
@@ -188,14 +189,36 @@ export default function CreatePostPage() {
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) return
     setSubmitting(true)
+    setSubmitError('')
+
     const slug = title.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 50) + '-' + Date.now()
-    await fetch('/api/community', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), content: content.trim(), topic: selectedTopic, tags, images, process_steps: processSteps, materials_used: materials, slug }),
-    })
-    setSubmitting(false)
-    router.push(`/community/post/${slug}`)
+
+    try {
+      const res = await fetch('/api/community', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), content: content.trim(), topic: selectedTopic, tags, images, process_steps: processSteps, materials_used: materials, slug }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        // 401 = not authenticated
+        if (res.status === 401) {
+          setSubmitError('请先登录后再发布作品')
+        } else {
+          setSubmitError(data.error || '发布失败，请重试')
+        }
+        setSubmitting(false)
+        return
+      }
+
+      setSubmitting(false)
+      router.push(`/community/post/${slug}`)
+    } catch {
+      setSubmitError('网络错误，请检查网络后重试')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -356,6 +379,14 @@ export default function CreatePostPage() {
               ))}
             </div>
           </section>
+
+          {/* Submit error */}
+          {submitError && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {submitError}
+            </div>
+          )}
 
           {/* Submit */}
           <div className="flex items-center gap-3 pt-4">

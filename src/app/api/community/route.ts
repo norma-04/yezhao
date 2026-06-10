@@ -2,6 +2,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as CommunityService from '@/lib/supabase/services/community.service'
 
+// Base64 decode (edge-compatible, same as middleware)
+function base64Decode(str: string): string {
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  if (typeof atob !== 'undefined') {
+    try { return atob(base64) } catch { /* fall through */ }
+  }
+  return Buffer.from(base64, 'base64').toString('utf-8')
+}
+
+// Extract user ID from Supabase auth cookie (same logic as middleware)
+function getUserIdFromCookies(request: NextRequest): string | null {
+  const allCookies = request.cookies.getAll()
+  for (const c of allCookies) {
+    if (!/^sb-[a-z0-9]+-auth-token/.test(c.name)) continue
+    try {
+      const raw = JSON.parse(base64Decode(c.value))
+      if (!raw.access_token) continue
+      const parts = raw.access_token.split('.')
+      if (parts.length !== 3) continue
+      const payload = JSON.parse(base64Decode(parts[1]))
+      if (payload.sub) return payload.sub
+    } catch { continue }
+  }
+  return null
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const topic = searchParams.get('topic') ?? 'all'
@@ -9,21 +35,32 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') ?? '20')
 
   const { items, total } = await CommunityService.getPosts({ topic, sort, limit })
-
   return NextResponse.json({ items, total })
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const post = await CommunityService.createPost({
-    title: body.title,
-    slug: body.slug || `post-${Date.now()}`,
-    content: body.content,
-    images: body.images,
-    topic: body.topic || 'showcase',
-    tags: body.tags,
-    author_id: body.author_id,
-    status: 'pending',
-  })
-  return NextResponse.json(post, { status: 201 })
+  try {
+    const body = await request.json()
+
+    // Get authenticated user from cookie
+    const authorId = getUserIdFromCookies(request)
+    if (!authorId) {
+      return NextResponse.json({ error: '请先登录后再发布作品' }, { status: 401 })
+    }
+
+    const post = await CommunityService.createPost({
+      title: body.title,
+      slug: body.slug || `post-${Date.now()}`,
+      content: body.content,
+      images: body.images || [],
+      topic: body.topic || 'showcase',
+      tags: body.tags || [],
+      author_id: authorId,
+      status: 'pending',
+    })
+
+    return NextResponse.json(post, { status: 201 })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || '发布失败' }, { status: 500 })
+  }
 }

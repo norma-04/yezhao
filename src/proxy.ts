@@ -1,7 +1,7 @@
 // ─── 野造 · Middleware ───
 // Session check + Route protection + RBAC
-// No Supabase imports — parses auth cookie directly to avoid
-// WebSocket dependency issues in edge environments (Node 18, EdgeOne).
+// Parses Supabase auth cookie directly — no @supabase/ssr dependency,
+// avoiding WebSocket issues in edge environments (EdgeOne Node 18).
 import { NextResponse, type NextRequest } from 'next/server'
 
 // ─── Route Categories ───
@@ -9,7 +9,6 @@ const AUTH_ROUTES = [
   '/auth/login', '/auth/register', '/auth/forgot-password',
   '/auth/reset-password', '/auth/callback',
 ]
-
 const PROTECTED_ROUTES = ['/me', '/community/create']
 const ADMIN_ROUTES = ['/admin']
 
@@ -18,39 +17,42 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some((r) => pathname === r || pathname.startsWith(r + '/'))
 }
 
-// Base64 decode (works in edge runtime — no Node.js Buffer)
+// Base64 decode (edge-compatible: atob for Web APIs, Buffer fallback for Node)
 function base64Decode(str: string): string {
-  // Convert base64url to standard base64
   const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
-  // atob() is available in Web/Edge runtimes
-  if (typeof atob !== 'undefined') return atob(base64)
-  // Fallback for Node.js
+  if (typeof atob !== 'undefined') {
+    try { return atob(base64) } catch { /* fall through */ }
+  }
+  // Node.js fallback
   return Buffer.from(base64, 'base64').toString('utf-8')
 }
 
-// Parse Supabase auth cookie to check if user has a valid session
-// Cookie format: sb-<project-ref>-auth-token = base64({ access_token, refresh_token, ... })
-function getSessionFromCookies(request: NextRequest): { userId: string } | null {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const projectRef = supabaseUrl.match(/https?:\/\/([^.]+)/)?.[1] || ''
-  const cookieName = `sb-${projectRef}-auth-token`
-
-  const cookie = request.cookies.get(cookieName)
-  if (!cookie) return null
+// Find Supabase session cookie by scanning cookie names (robust — no env var needed)
+function findSession(request: NextRequest): { userId: string } | null {
+  // Scan for sb-*-auth-token cookie (e.g. sb-abcdefghijkl-auth-token)
+  let cookieValue: string | undefined
+  const allCookies = request.cookies.getAll()
+  for (const c of allCookies) {
+    if (/^sb-[a-z0-9]+-auth-token/.test(c.name)) {
+      cookieValue = c.value
+      break
+    }
+  }
+  if (!cookieValue) return null
 
   try {
-    const raw = JSON.parse(base64Decode(cookie.value))
+    const raw = JSON.parse(base64Decode(cookieValue))
     if (!raw.access_token) return null
 
-    // Decode JWT payload (without verification — just to check expiry)
-    const payload = raw.access_token.split('.')[1]
-    if (!payload) return null
-    const decoded = JSON.parse(base64Decode(payload))
+    // Decode JWT payload to check expiry (no verification — Supabase handles that)
+    const parts = raw.access_token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(base64Decode(parts[1]))
 
-    // Check if token is expired
-    if (decoded.exp && decoded.exp * 1000 < Date.now()) return null
+    // Expired?
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null
 
-    return { userId: decoded.sub }
+    return { userId: payload.sub }
   } catch {
     return null
   }
@@ -60,7 +62,7 @@ function getSessionFromCookies(request: NextRequest): { userId: string } | null 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip static files, API, Next.js internals
+  // Skip static files, API routes, Next.js internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -75,14 +77,13 @@ export async function proxy(request: NextRequest) {
   const needsProtection = matchesRoute(pathname, PROTECTED_ROUTES)
   const needsAdmin = matchesRoute(pathname, ADMIN_ROUTES)
 
-  // Public route — no auth check needed
   if (!needsAuth && !needsProtection && !needsAdmin) {
     return NextResponse.next()
   }
 
-  const session = getSessionFromCookies(request)
+  const session = findSession(request)
 
-  // Auth routes (login/register): redirect to home if already logged in
+  // Auth routes: redirect to home if already logged in
   if (needsAuth) {
     if (session) {
       return NextResponse.redirect(new URL('/', request.url))
@@ -100,9 +101,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Admin routes: we can check the cookie exists but can't verify role
-  // without a DB call. For now, just require auth — the admin page itself
-  // will do the role check client-side.
+  // Admin routes: require auth (role check done client-side)
   if (needsAdmin) {
     if (!session) {
       const loginUrl = new URL('/auth/login', request.url)
