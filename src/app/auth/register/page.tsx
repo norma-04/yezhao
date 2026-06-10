@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, UserPlus, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,7 +42,6 @@ function RegisterContent() {
   const redirectTo = searchParams.get('redirect') || '/'
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState('')
-  const [serverSuccess, setServerSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const {
@@ -56,24 +55,32 @@ function RegisterContent() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
     setServerError('')
-    setServerSuccess('')
 
-    const result = await AuthService.signUp({
-      email: data.email,
-      password: data.password,
-      nickname: data.nickname,
-      redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+    // Step 1: Create user via API (service_role, email pre-confirmed)
+    const signupRes = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: data.email, password: data.password, nickname: data.nickname }),
     })
 
-    if (!result.success) {
-      setServerError(result.error || '注册失败，请重试')
+    if (!signupRes.ok) {
+      const errData = await signupRes.json().catch(() => ({ error: '注册失败' }))
+      setServerError(errData.error || '注册失败，请重试')
       setIsLoading(false)
       return
     }
 
-    // Show verification email sent message
-    setServerSuccess('注册成功！请查看邮箱并点击验证链接完成注册。')
-    setIsLoading(false)
+    // Step 2: Auto sign-in
+    const signInResult = await AuthService.signIn({ email: data.email, password: data.password })
+
+    if (!signInResult.success) {
+      setServerError('注册成功但自动登录失败，请手动登录')
+      setIsLoading(false)
+      return
+    }
+
+    router.push(redirectTo)
+    router.refresh()
   }
 
   return (
@@ -86,18 +93,6 @@ function RegisterContent() {
         <h2 className="font-serif text-2xl text-clay-800">加入野造</h2>
         <p className="text-clay-400 text-sm mt-1">开启你的手作创作之旅</p>
       </div>
-
-      {/* Success banner (email verification sent) */}
-      {serverSuccess && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-sage-50 text-sage-700 text-sm border border-sage-100"
-        >
-          <CheckCircle className="h-4 w-4 flex-shrink-0" />
-          {serverSuccess}
-        </motion.div>
-      )}
 
       {/* Error banner */}
       {serverError && (
@@ -184,7 +179,7 @@ function RegisterContent() {
         {/* Submit */}
         <Button
           type="submit"
-          disabled={isLoading || !!serverSuccess}
+          disabled={isLoading}
           className="w-full rounded-xl bg-clay-600 hover:bg-clay-700 text-white font-medium h-11"
         >
           {isLoading ? (

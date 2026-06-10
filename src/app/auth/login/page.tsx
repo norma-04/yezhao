@@ -55,7 +55,17 @@ function LoginContent() {
     const result = await AuthService.signIn(data)
 
     if (!result.success) {
-      setServerError(result.error || '登录失败，请重试')
+      const errMsg = result.error || ''
+      // Translate Supabase errors to user-friendly Chinese
+      if (errMsg.includes('Invalid login credentials') || errMsg.includes('Invalid login')) {
+        setServerError('邮箱或密码错误，请检查后重试。如果刚注册，请先查看邮箱点击验证链接激活账号。')
+      } else if (errMsg.includes('Email not confirmed')) {
+        setServerError('邮箱尚未验证，请查看收件箱（包括垃圾邮件）点击验证链接后再登录。')
+      } else if (errMsg.includes('rate limit') || errMsg.includes('too many')) {
+        setServerError('登录尝试过于频繁，请稍后再试。')
+      } else {
+        setServerError(errMsg || '登录失败，请重试')
+      }
       setIsLoading(false)
       return
     }
