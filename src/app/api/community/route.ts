@@ -1,8 +1,7 @@
 // ─── 野造 · GET/POST /api/community ───
-// GET: uses CommunityService (Supabase client — works fine for reads)
-// POST: uses direct REST API (bypasses Supabase client — avoids socket error on EdgeOne)
+// POST: uses direct REST API (no Supabase client — no socket error)
+// GET: dynamic import to avoid loading Supabase client on POST codepath
 import { NextRequest, NextResponse } from 'next/server'
-import * as CommunityService from '@/lib/supabase/services/community.service'
 import { serverPost } from '@/lib/supabase/server-rest'
 
 // Base64 decode (edge-compatible)
@@ -37,7 +36,9 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get('sort') ?? 'latest'
   const limit = parseInt(searchParams.get('limit') ?? '20')
 
-  const { items, total } = await CommunityService.getPosts({ topic, sort, limit })
+  // Dynamic import — only loads Supabase client when GET is actually called
+  const { getPosts } = await import('@/lib/supabase/services/community.service')
+  const { items, total } = await getPosts({ topic, sort, limit })
   return NextResponse.json({ items, total })
 }
 
