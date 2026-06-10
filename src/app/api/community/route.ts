@@ -1,8 +1,11 @@
 // ─── 野造 · GET/POST /api/community ───
+// GET: uses CommunityService (Supabase client — works fine for reads)
+// POST: uses direct REST API (bypasses Supabase client — avoids socket error on EdgeOne)
 import { NextRequest, NextResponse } from 'next/server'
 import * as CommunityService from '@/lib/supabase/services/community.service'
+import { serverPost } from '@/lib/supabase/server-rest'
 
-// Base64 decode (edge-compatible, same as middleware)
+// Base64 decode (edge-compatible)
 function base64Decode(str: string): string {
   const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
   if (typeof atob !== 'undefined') {
@@ -11,7 +14,7 @@ function base64Decode(str: string): string {
   return Buffer.from(base64, 'base64').toString('utf-8')
 }
 
-// Extract user ID from Supabase auth cookie (same logic as middleware)
+// Extract user ID from Supabase auth cookie
 function getUserIdFromCookies(request: NextRequest): string | null {
   const allCookies = request.cookies.getAll()
   for (const c of allCookies) {
@@ -41,14 +44,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-
-    // Get authenticated user from cookie
     const authorId = getUserIdFromCookies(request)
     if (!authorId) {
       return NextResponse.json({ error: '请先登录后再发布作品' }, { status: 401 })
     }
 
-    const post = await CommunityService.createPost({
+    // Use direct REST call — no Supabase client library, no Realtime, no socket error
+    const data = await serverPost('posts', {
       title: body.title,
       slug: body.slug || `post-${Date.now()}`,
       content: body.content,
@@ -59,8 +61,9 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     })
 
-    return NextResponse.json(post, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || '发布失败' }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '发布失败'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
