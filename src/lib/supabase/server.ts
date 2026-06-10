@@ -1,4 +1,5 @@
 // ─── 野造 · Supabase Server Client ───
+import './stub-websocket' // MUST be first — prevents Realtime crash on Node < 22
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './database.types'
