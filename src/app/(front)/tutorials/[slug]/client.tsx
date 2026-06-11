@@ -136,18 +136,47 @@ export function TutorialDetailClient({ tutorial, related }: { tutorial: Tutorial
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           {/* ── Main Content (2 cols) ── */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Cover */}
+            {/* Video Player */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="aspect-video rounded-2xl bg-gradient-to-br from-clay-200 via-warm-100 to-clay-100 flex items-center justify-center"
+              className="aspect-video rounded-2xl overflow-hidden bg-black"
             >
-              <div className="text-center">
-                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-white/60 backdrop-blur flex items-center justify-center mx-auto shadow-lg">
-                  <Play className="h-8 w-8 text-clay-500 ml-1" />
+              {tutorial.video_url ? (
+                tutorial.video_url.includes('bilibili.com') ? (
+                  <iframe
+                    src={
+                      tutorial.video_url.includes('player.bilibili.com')
+                        ? tutorial.video_url
+                        : tutorial.video_url.replace(
+                            /(?:https?:\/\/)?(?:www\.)?bilibili\.com\/video\/([a-zA-Z0-9]+).*/,
+                            'https://player.bilibili.com/player.html?bvid=$1',
+                          )
+                    }
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="autoplay; fullscreen"
+                    title={tutorial.title}
+                  />
+                ) : (
+                  <video
+                    src={tutorial.video_url}
+                    className="w-full h-full"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                )
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-clay-200 via-warm-100 to-clay-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-white/60 backdrop-blur flex items-center justify-center mx-auto shadow-lg">
+                      <Play className="h-8 w-8 text-clay-500 ml-1" />
+                    </div>
+                    <p className="mt-3 text-clay-500 text-sm">暂无视频</p>
+                  </div>
                 </div>
-                <p className="mt-3 text-clay-500 text-sm">点击播放教程视频</p>
-              </div>
+              )}
             </motion.div>
 
             {/* Title & Meta */}
